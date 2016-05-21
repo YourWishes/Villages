@@ -1,3 +1,19 @@
+/*
+ * Copyright 2013 Dominic Masters and Jordan Atkins
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.domsplace.Villages.Commands.SubCommands;
 
 import com.domsplace.Villages.Events.VillageCreatedEvent;
@@ -6,6 +22,7 @@ import com.domsplace.Villages.Bases.BukkitCommand;
 import com.domsplace.Villages.Bases.DataManager;
 import com.domsplace.Villages.Bases.PluginHook;
 import com.domsplace.Villages.Bases.SubCommand;
+import com.domsplace.Villages.Objects.DomsLocation;
 import com.domsplace.Villages.Objects.Region;
 import com.domsplace.Villages.Objects.Resident;
 import com.domsplace.Villages.Objects.Village;
@@ -66,7 +83,7 @@ public class VillageCreate extends SubCommand {
         }
         
         //Make sure they have enough
-        if(Base.useEconomy && !hasBalance(sender.getName(), getCost("createvillage"))) {
+        if(Base.useEconomy() && !hasBalance(sender.getName(), getCost("createvillage"))) {
             sk(sender, "notenoughmoney", PluginHook.VAULT_HOOK.formatEconomy(getCost("createvillage")));
             return true;
         }
@@ -74,24 +91,25 @@ public class VillageCreate extends SubCommand {
         //"Create" a village
         Village village = new Village();
         Resident player = Resident.getResident(getPlayer(sender));
-        Region spawn = Region.getRegion(getPlayer(sender));
+        DomsLocation spawn = new DomsLocation(getPlayer(sender));
+        Region spawnRegion = Region.getRegion(spawn);
         
         village.setName(name);
         village.setMayor(player);
-        village.addRegion(spawn);
+        village.addRegion(spawnRegion);
         village.setSpawn(spawn);
         
         if(player == null || spawn == null) return false;
         
         //Check for Overlapping
-        if(Village.doesRegionOverlapVillage(spawn)) {
+        if(Village.doesRegionOverlapVillage(spawnRegion)) {
             sk(sender, "createvillageoverlap");
             return true;
         }
         
         //Check for WorldGuard Overlapping
         if(Base.useWorldGuard) {
-            if(PluginHook.WORLD_GUARD_HOOK.isOverlappingRegion(spawn)) {
+            if(PluginHook.WORLD_GUARD_HOOK.isOverlappingRegion(spawnRegion)) {
                 sk(sender, "createvillageregionoverlap");
                 return true;
             }
@@ -103,7 +121,7 @@ public class VillageCreate extends SubCommand {
         if(event.isCancelled()) return true;
         
         //Charge Players Wallet
-        if(Base.useEconomy) {
+        if(Base.useEconomy()) {
             PluginHook.VAULT_HOOK.getEconomy().withdrawPlayer(sender.getName(), getCost("createvillage"));
         }
         
@@ -113,4 +131,6 @@ public class VillageCreate extends SubCommand {
         bk("createdvillage", getPlayer(sender), village);
         return true;
     }
+    
+    @Override public String getHelpTextShort(String label) {return "Creates a Village with the name you enter.";}
 }

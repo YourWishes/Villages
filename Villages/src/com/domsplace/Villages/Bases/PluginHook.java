@@ -1,3 +1,19 @@
+/*
+ * Copyright 2013 Dominic Masters and Jordan Atkins
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.domsplace.Villages.Bases;
 
 import com.domsplace.Villages.Hooks.*;
@@ -6,7 +22,7 @@ import java.util.List;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.Plugin;
 
-public class PluginHook extends Base{
+public class PluginHook {
     //Constants
     private static final List<PluginHook> PLUGIN_HOOKS = new ArrayList<PluginHook>();
     
@@ -17,6 +33,8 @@ public class PluginHook extends Base{
     public static final SELBansHook SEL_BANS_HOOK = new SELBansHook();
     public static final PEXHook PEX_HOOK = new PEXHook();
     public static final EssentialsChatHook ESSENTIALS_CHAT_HOOK = new EssentialsChatHook();
+    public static final DomsCommandsHook DOMS_COMMANDS_HOOK = new DomsCommandsHook();
+    public static final DynmapHook DYNMAP_HOOK = new DynmapHook();
     
     //Static
     private static void hookPlugin(PluginHook hook) {
@@ -34,15 +52,15 @@ public class PluginHook extends Base{
     
     public static void hookAll() {
         for(PluginHook plugin : PLUGIN_HOOKS) {
-            debug("Try Hoooking " + plugin.getPluginName());
+            Base.debug("Try Hoooking " + plugin.getPluginName());
             if(!plugin.shouldHook()) continue;
-            if(!plugin.hook()) log("Failed to hook into " + plugin.getPluginName());
+            if(!plugin.hook()) Base.log("Failed to hook into " + plugin.getPluginName());
         }
     }
     
     public static void unhookAll() {
         for(PluginHook plugin : PLUGIN_HOOKS) {
-            debug("Unhoooking " + plugin.getPluginName());
+            Base.debug("Unhoooking " + plugin.getPluginName());
             plugin.unHook();
         }
     }
@@ -60,8 +78,8 @@ public class PluginHook extends Base{
     public String getPluginName() {return this.pluginName;}
     public Plugin getHookedPlugin() {return this.plugin;}
     
-    public void onUnhook() {log("Unhooked from " + this.pluginName);}
-    public void onHook() {log("Hooked into " + this.pluginName);}
+    public void onUnhook() {Base.log("Unhooked from " + this.pluginName);}
+    public void onHook() {Base.log("Hooked into " + this.pluginName);}
     
     public boolean isHooked() {return this.plugin != null;}
     

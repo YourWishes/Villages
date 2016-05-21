@@ -1,4 +1,4 @@
-    package com.domsplace.Villages;
+package com.domsplace.Villages;
 
 import com.domsplace.Villages.Commands.SubCommands.Bank.VillageBankWithdraw;
 import com.domsplace.Villages.Commands.SubCommands.Bank.VillageBankDeposit;
@@ -8,8 +8,10 @@ import com.domsplace.Villages.Bases.*;
 import com.domsplace.Villages.Commands.*;
 import com.domsplace.Villages.Commands.SubCommands.*;
 import com.domsplace.Villages.Commands.SubCommands.Mayor.*;
+import com.domsplace.Villages.Commands.SubCommands.Leader.*;
+import com.domsplace.Villages.Commands.SubCommands.War.*;
 import com.domsplace.Villages.Commands.SubCommands.Plot.*;
-import com.domsplace.Villages.Commands.SubCommands.Tax.VillageTaxCheck;
+import com.domsplace.Villages.Commands.SubCommands.Tax.*;
 import com.domsplace.Villages.Listeners.*;
 import com.domsplace.Villages.Objects.Village;
 import com.domsplace.Villages.Objects.VillageMap;
@@ -45,11 +47,13 @@ public class VillagesPlugin extends PluginBase {
         new VillageTop();
         new VillageLookup();
         new VillageMapSubCommand();
+        new VillageBorder();
         
         new VillageAdmin();
         new VillageAdminSave();
         new VillageAdminReload();
         new VillageAdminDelete();
+        new VillageAdminDebug();
         new VillageAdminAddPlayer();
         new VillageAdminRemovePlayer();
         new VillageAdminSetName();
@@ -61,6 +65,17 @@ public class VillagesPlugin extends PluginBase {
         new VillageBankOpen();
         new VillageBankWithdraw();
         
+        new VillageLeader();
+        new VillageLeaderClose();
+        new VillageLeaderKick();
+        new VillageLeaderSetLeader();
+        new VillageLeaderSetDescription();
+        new VillageLeaderSetName();
+        new VillageLeaderExpand();
+        new VillageLeaderSetSpawn();
+        new VillageLeaderExplode();
+        new VillageLeaderShrink();
+        
         new VillageMayor();
         new VillageMayorClose();
         new VillageMayorKick();
@@ -70,6 +85,7 @@ public class VillagesPlugin extends PluginBase {
         new VillageMayorExpand();
         new VillageMayorSetSpawn();
         new VillageMayorExplode();
+        new VillageMayorShrink();
         
         new VillagePlotCheck();
         new VillagePlotClaim();
@@ -78,6 +94,8 @@ public class VillagesPlugin extends PluginBase {
         
         new VillageTaxCheck();
         
+        new VillageWar();
+        
         //Hook
         PluginHook.hookAll();
         
@@ -85,6 +103,7 @@ public class VillagesPlugin extends PluginBase {
         new ConfigSaveThread();
         new UpdateThread();
         new UpkeepThread();
+        new VillageBorderThread();
         
         //Load Listeners
         new CustomEventListener();
@@ -115,7 +134,7 @@ public class VillagesPlugin extends PluginBase {
     @Override
     public void onDisable() {
         if(!enabled) {
-            Base.debug("Failed to Enable Villages!");
+            Base.debug("Failed to enable Villages!");
             return;
         }
         

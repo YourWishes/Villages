@@ -1,3 +1,19 @@
+/*
+ * Copyright 2013 Dominic Masters and Jordan Atkins
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.domsplace.Villages.Objects;
 
 import com.domsplace.Villages.Bases.Base;
@@ -6,6 +22,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import org.bukkit.Bukkit;
+import org.bukkit.Effect;
+import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
@@ -87,13 +105,16 @@ public class Village {
     
     private Resident mayor;
     private Bank bank;
-    private Region spawn;
+    private DomsLocation spawn;
     private VillageMap map;
     
     private List<Region> regions;
     private List<Plot> plots;
     private List<Resident> residents;
     private List<TaxData> taxData;
+    
+    private List<String> friends;
+    private List<String> foes;
     
     public Village() {
         this.bank = new Bank(this);
@@ -102,12 +123,15 @@ public class Village {
         this.residents = new ArrayList<Resident>();
         this.taxData = new ArrayList<TaxData>();
         this.createdDate = Base.getNow();
+        this.friends = new ArrayList<String>();
+        this.foes = new ArrayList<String>();
+        this.description = "Welcome!";
     }
     
     public String getName() {return this.name;}
     public String getDescription() {return this.description;}
     public Resident getMayor() {return this.mayor;}
-    public Region getSpawn() {return this.spawn;}
+    public DomsLocation getSpawn() {return this.spawn;}
     public Bank getBank() {return this.bank;}
     public long getCreatedDate() {return this.createdDate;}
     
@@ -115,17 +139,21 @@ public class Village {
     public List<Plot> getPlots() {return new ArrayList<Plot>(this.plots);}
     public List<Resident> getResidents() {return new ArrayList<Resident>(this.residents);}
     public List<TaxData> getTaxData() {return new ArrayList<TaxData>(this.taxData);}
+    public List<String> getFriends() {return new ArrayList<String>(this.friends);}
+    public List<String> getFoes() {return new ArrayList<String>(this.foes);}
     
     public void setName(String name) {this.name = name; this.bank.updateGUI();}
     public void setDescription(String description) {this.description = description;}
     public void setMayor(Resident mayor) {this.mayor = mayor; this.addResident(mayor);}
-    public void setSpawn(Region region) {this.addRegion(region); this.spawn = region;}
+    public void setSpawn(DomsLocation region) {this.spawn = region;}
     public void setCreatedDate(long date) {this.createdDate = date;}
     
     public void addRegion(Region region) {if(this.regions.contains(region)) {return;} this.regions.add(region);}
     public void addPlot(Plot plot) {this.plots.add(plot);}
     public void addResident(Resident resident) {if(this.residents.contains(resident)){return;} this.residents.add(resident);}
     public void addTaxData(TaxData data) {this.taxData.add(data);}
+    public void addFriend(String friend) {this.friends.add(friend);}
+    public void addFoe(String foe) {this.foes.add(foe);}
     
     public void removeResident(Resident resident) {this.residents.remove(resident);}
 
@@ -148,6 +176,26 @@ public class Village {
         }
         return null;
     }
+
+    public List<Village> getVillageFriends() {
+        List<Village> vils = new ArrayList<Village>();
+        for(String s : this.friends) {
+            Village v = Village.getVillage(s);
+            if(v == null) continue;
+            vils.add(v);
+        }
+        return vils;
+    }
+
+    public List<Village> getVillageFoes() {
+        List<Village> vils = new ArrayList<Village>();
+        for(String s : this.foes) {
+            Village v = Village.getVillage(s);
+            if(v == null) continue;
+            vils.add(v);
+        }
+        return vils;
+    }
     
     public boolean isRegionOverlappingVillage(Region region) {
         return this.getOverlappingRegion(region) != null;
@@ -167,6 +215,10 @@ public class Village {
             reg.add(r.toString());
         }
         return reg;
+    }
+
+    public Region getSpawnRegion() {
+        return Region.getRegion(this.spawn.toLocation());
     }
     
     public List<Player> getOnlineResidents() {
@@ -209,6 +261,10 @@ public class Village {
     public void addRegions(Collection<Region> claiming) {
         this.regions.addAll(claiming);
     }
+
+    public void removeRegions(Collection<Region> claiming) {
+        this.regions.removeAll(claiming);
+    }
     
     public void explode() {
         //WARNING! Can be CPU intensive
@@ -233,7 +289,7 @@ public class Village {
     public int getValue() {
         int v = this.getRegions().size();
         v += this.residents.size();
-        if(Base.useEconomy) v += this.getBank().getWealth();
+        if(Base.useEconomy()) v += this.getBank().getWealth();
         //TODO: Add ItemBank stuff here
         return v;
     }
@@ -245,8 +301,114 @@ public class Village {
         return null;
     }
     
+    public List<Location> getBorderLocations() {
+        List<Location> locs = new ArrayList<Location>();
+        if(!this.getSpawn().isWorldLoaded()) return locs;
+        for(Region r : this.regions) {
+            Region north = r.getRelativeRegion(0, 1);
+            Region south = r.getRelativeRegion(0, -1);
+            Region east = r.getRelativeRegion(1, 0);
+            Region west = r.getRelativeRegion(-1, 0);
+            
+            boolean n = this.isRegionOverlappingVillage(north);
+            boolean s = this.isRegionOverlappingVillage(south);
+            boolean e = this.isRegionOverlappingVillage(east);
+            boolean w = this.isRegionOverlappingVillage(west);
+            
+            if(n && s && e && w) continue;
+            
+            int m = 255;
+            
+            if(!n) {
+                for(int i = r.getX(); i < r.getMaxX(); i++) {
+                    Location l = r.getBukkitWorld().getBlockAt(i, m, r.getMaxZ()).getLocation();
+                    DomsLocation safe = new DomsLocation(l);
+                    locs.add(safe.getSafeLocation().toLocation());
+                }
+            }
+            
+            if(!s) {
+                for(int i = r.getX(); i < r.getMaxX(); i++) {
+                    Location l = r.getBukkitWorld().getBlockAt(i, m, r.getZ()).getLocation();
+                    DomsLocation safe = new DomsLocation(l);
+                    locs.add(safe.getSafeLocation().toLocation());
+                }
+            }
+            
+            if(!e) {
+                for(int i = r.getZ(); i < r.getMaxZ(); i++) {
+                    Location l = r.getBukkitWorld().getBlockAt(r.getMaxX(), m, i).getLocation();
+                    DomsLocation safe = new DomsLocation(l);
+                    locs.add(safe.getSafeLocation().toLocation());
+                }
+            }
+            
+            if(!w) {
+                for(int i = r.getZ(); i < r.getMaxZ(); i++) {
+                    Location l = r.getBukkitWorld().getBlockAt(r.getX(), m, i).getLocation();
+                    DomsLocation safe = new DomsLocation(l);
+                    locs.add(safe.getSafeLocation().toLocation());
+                }
+            }
+        }
+        
+        return locs;
+    }
+    
+    public void playBorderEffect(Player player) {
+        if(!this.getSpawn().isWorldLoaded()) return;
+        for(Region r : this.regions) {
+            Region north = r.getRelativeRegion(0, 1);
+            Region south = r.getRelativeRegion(0, -1);
+            Region east = r.getRelativeRegion(1, 0);
+            Region west = r.getRelativeRegion(-1, 0);
+            
+            boolean n = this.isRegionOverlappingVillage(north);
+            boolean s = this.isRegionOverlappingVillage(south);
+            boolean e = this.isRegionOverlappingVillage(east);
+            boolean w = this.isRegionOverlappingVillage(west);
+            
+            if(n && s && e && w) continue;
+            
+            int m = 255;
+            
+            if(!n) {
+                for(int i = r.getX(); i < r.getMaxX(); i++) {
+                    Location l = r.getBukkitWorld().getBlockAt(i, m, r.getMaxZ()).getLocation();
+                    DomsLocation safe = new DomsLocation(l);
+                    player.playEffect(safe.getSafeLocation().toLocation(), Effect.MOBSPAWNER_FLAMES, null);
+                }
+            }
+            
+            if(!s) {
+                for(int i = r.getX(); i < r.getMaxX(); i++) {
+                    Location l = r.getBukkitWorld().getBlockAt(i, m, r.getZ()).getLocation();
+                    DomsLocation safe = new DomsLocation(l);
+                    player.playEffect(safe.getSafeLocation().toLocation(), Effect.MOBSPAWNER_FLAMES, null);
+                }
+            }
+            
+            if(!e) {
+                for(int i = r.getZ(); i < r.getMaxZ(); i++) {
+                    Location l = r.getBukkitWorld().getBlockAt(r.getMaxX(), m, i).getLocation();
+                    DomsLocation safe = new DomsLocation(l);
+                    player.playEffect(safe.getSafeLocation().toLocation(), Effect.MOBSPAWNER_FLAMES, null);
+                }
+            }
+            
+            if(!w) {
+                for(int i = r.getZ(); i < r.getMaxZ(); i++) {
+                    Location l = r.getBukkitWorld().getBlockAt(r.getX(), m, i).getLocation();
+                    DomsLocation safe = new DomsLocation(l);
+                    player.playEffect(safe.getSafeLocation().toLocation(), Effect.MOBSPAWNER_FLAMES, null);
+                }
+            }
+        }
+    }
+    
     public void delete() {
         this.bank.delete();
+        if(this.map != null) this.map.unload();
     }
 
     public TaxData getTaxData(Tax t) {
@@ -264,7 +426,11 @@ public class Village {
         Plot p = this.getPlot(r);
         if(p == null) return false;
         if(p.getOwner() == null) return false;
-        if(!p.getOwner().equals(resident)) return false;
-        return true;
+        return p.getOwner().equals(resident);
+    }
+    
+    @Override
+    public String toString() {
+        return this.name;
     }
 }

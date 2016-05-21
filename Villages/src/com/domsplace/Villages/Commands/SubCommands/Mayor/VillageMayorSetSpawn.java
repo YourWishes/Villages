@@ -1,8 +1,25 @@
+/*
+ * Copyright 2013 Dominic Masters and Jordan Atkins
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.domsplace.Villages.Commands.SubCommands.Mayor;
 
 import com.domsplace.Villages.Bases.BukkitCommand;
 import com.domsplace.Villages.Bases.DataManager;
 import com.domsplace.Villages.Bases.SubCommand;
+import com.domsplace.Villages.Objects.DomsLocation;
 import com.domsplace.Villages.Objects.Region;
 import com.domsplace.Villages.Objects.Resident;
 import com.domsplace.Villages.Objects.Village;
@@ -11,7 +28,11 @@ import org.bukkit.command.CommandSender;
 
 public class VillageMayorSetSpawn extends SubCommand {
     public VillageMayorSetSpawn() {
-        super("village", "mayor", "set", "spawn");
+        this("mayor");
+    }
+    
+    public VillageMayorSetSpawn(String alias) {
+        super("village", alias, "set", "spawn");
         this.setPermission("mayor.setspawn");
     }
     
@@ -24,7 +45,8 @@ public class VillageMayorSetSpawn extends SubCommand {
         if(v == null) {sk(sender, "notinvillage");return true;}
         if(!v.isMayor(r)) {sk(sender, "onlymayor"); return true;}
         
-        Region re = Region.getRegion(getPlayer(sender).getLocation());
+        DomsLocation spawn = new DomsLocation(getPlayer(sender));
+        Region re = Region.getRegion(spawn);
         if(re == null) return true;
         
         if(!v.isRegionOverlappingVillage(re)) {
@@ -32,7 +54,7 @@ public class VillageMayorSetSpawn extends SubCommand {
             return true;
         }
         
-        v.setSpawn(re);
+        v.setSpawn(spawn);
         sk(sender, "setvillagespawn");
         DataManager.saveAll();
         return true;

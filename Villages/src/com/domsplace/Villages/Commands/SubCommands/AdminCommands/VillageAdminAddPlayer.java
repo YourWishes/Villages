@@ -1,8 +1,26 @@
+/*
+ * Copyright 2013 Dominic Masters and Jordan Atkins
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.domsplace.Villages.Commands.SubCommands.AdminCommands;
 
 import com.domsplace.Villages.Bases.BukkitCommand;
 import com.domsplace.Villages.Bases.DataManager;
 import com.domsplace.Villages.Bases.SubCommand;
+import com.domsplace.Villages.Events.ResidentAddedEvent;
+import com.domsplace.Villages.Events.ResidentRemovedEvent;
 import com.domsplace.Villages.Objects.Resident;
 import com.domsplace.Villages.Objects.Village;
 import org.bukkit.command.Command;
@@ -38,7 +56,7 @@ public class VillageAdminAddPlayer extends SubCommand {
             return true;
         }
         
-        Village residentVillage = Village.getPlayersVillage(player);
+        /*Village residentVillage = Village.getPlayersVillage(player);
         if(residentVillage == null) {
             sk(sender, "playernotinvillage");
             return true;
@@ -49,7 +67,29 @@ public class VillageAdminAddPlayer extends SubCommand {
             return true;
         }
         
-        v.setMayor(player);
+        v.setMayor(player);*/
+        
+        Village residentVillage = Village.getPlayersVillage(player);
+        if(residentVillage != null) {
+            if(residentVillage.isMayor(player)) {
+                sk(sender, "cantkickmayor");
+                return true;
+            }
+        
+            ResidentRemovedEvent event = new ResidentRemovedEvent(player, residentVillage);
+            event.fireEvent();
+            if(event.isCancelled()) return true;
+
+            residentVillage.removeResident(player);
+            sk(sender, "playerremovedfromvillage", player, v);
+        }
+        
+        v.addResident(player);
+        
+        ResidentAddedEvent event2 = new ResidentAddedEvent(player, v);
+        event2.fireEvent();
+        if(event2.isCancelled()) return true;
+        
         sk(sender, "playeraddedtovillage", player, v);
         DataManager.saveAll();
         return true;

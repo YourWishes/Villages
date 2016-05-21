@@ -1,0 +1,55 @@
+%c%|Shows information about the village that you're in (Same as /village info [your village])
+%c% info [name]|Gets information about the village you enter.
+%c% invite [player]|Invites a player to your Village.
+%c% accept|Accept a received Village Invite.
+%c% deny|Deny a received invite.
+%c% create [name]|Creates a Village with the name you enter.
+%c% help|Shows basic information about the Villages plugin (needs work).
+%c% leave|Leave whatever Village you're in (you have to resign as mayor first).
+%c% list|Shows a list of all known Villages.
+%c% lookup [player]|Lookup a specific player and what Village they're in (if any).
+%c% border|Show or hide the Village border.
+%c% map|Shows the Village map (Gives you a map).
+%c% top|Shows the top 5 Villages based off wealth and resident count.
+%c% spawn|Takes you to your Village's spawn.
+%c% msg [message]|Sends a message to everyone in the Village.
+%c% admin|Shows basic plugin information.
+%c% admin add player [village] [player]|Adds [player] to village [village] (if possible)
+%c% admin delete [village]|Immediately delete a village.
+%c% admin reload|Reload the plugin, configurations etc, BE CAREFUL! Any unsaved Village changes will be lost!
+%c% admin remove player [player]|Removes [player] from whatever village they're in
+%c% admin save|Saves all Villages data to the disk.
+%c% admin set description [village] [description]|Sets the Village description for the supplied village.
+%c% admin set mayor [village] [mayor]|Sets the mayor of a Village.
+%c% admin set name [village] [name]|Sets the name of a Village.
+%c% admin debug|Turn debugging mode on or off.
+%c% bank deposit [amount]|Deposit the specified amount into the Village bank.
+%c% bank withdraw [amount]|Withdraw the specified amount from the Village bank.
+%c% bank open|Opens the Village bank to store and withdraw items.
+%c% leader|Get basic information about Village (same as /village, but shows if you're leader or not).
+%c% leader close|Closes the Village! (no refunds, no items kept and no money saved!).
+%c% leader expand|Expand the Village (see the bukkit page for more information).
+%c% leader shrink|Unclaim a claimed Region.
+%c% leader explode|EXPLODES the entire village, this will not delete the village however.
+%c% leader kick [player]|Kick a player from the Village, plots claimed by the player are not removed.
+%c% leader set description [description]|Set a new description for the Village.
+%c% leader set leader [leader]|Resign from leader and make a new player leader.
+%c% leader set name [name]|Rename your Village.
+%c% leader set spawn|Sets the spawn to the region you're standing in.
+%c% mayor|Get basic information about Village (same as /village, but shows if you're mayor or not).
+%c% mayor close|Closes the Village! (no refunds, no items kept and no money saved!).
+%c% mayor expand|Expand the Village (see the bukkit page for more information).
+%c% mayor shrink|Unclaim a claimed Region.
+%c% mayor explode|EXPLODES the entire village, this will not delete the village however.
+%c% mayor kick [player]|Kick a player from the Village, plots claimed by the player are not removed.
+%c% mayor set description [description]|Set a new description for the Village.
+%c% mayor set mayor [mayor]|Resign from mayor and make a new player mayor.
+%c% mayor set name [name]|Rename your Village.
+%c% mayor set spawn|Sets the spawn to the region you're standing in.
+%c% plot check|Checks the claim status of the plot, or if it's available, the price.
+%c% plot claim|Claims the plot for whatever price you enter, money goes to Village bank.
+%c% plot set price [price]|(Mayor only) set the price of the plot you're standing in.
+%c% plot set owner [owner]|(Mayor only) set the owner of the plot you're standing in, set to the mayors name to make it available.
+%c% tax check|Shows a list of taxes due.
+%c% tax check [name]|Enter the name of a tax to show what's due in that tax.
+%c% war|View War status

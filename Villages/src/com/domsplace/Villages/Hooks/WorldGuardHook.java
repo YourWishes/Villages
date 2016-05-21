@@ -1,3 +1,19 @@
+/*
+ * Copyright 2013 Dominic Masters and Jordan Atkins
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.domsplace.Villages.Hooks;
 
 import com.domsplace.Villages.Bases.Base;
@@ -40,7 +56,7 @@ public class WorldGuardHook extends PluginHook {
     
     public ProtectedRegion getOverlappingRegion(Region region) {
         for(ProtectedRegion r : getWorldGuard().getRegionManager(region.getBukkitWorld()).getRegions().values()) {
-            debug("Checking Region " + r.getId());
+            Base.debug("Checking Region " + r.getId());
             if(!isCoordBetweenCoords(region, r)) continue;
             return r;
         }
@@ -64,14 +80,14 @@ public class WorldGuardHook extends PluginHook {
     }
     
     public static boolean isCoordBetweenCoords(int checkX, int checkZ, BlockVector min, BlockVector max) {
-        return isCoordBetweenCoords(checkX, checkZ, min.getBlockX(), min.getBlockZ(), max.getBlockX(), max.getBlockZ());
+        return Base.isCoordBetweenCoords(checkX, checkZ, min.getBlockX(), min.getBlockZ(), max.getBlockX(), max.getBlockZ());
     }
     
     public static boolean isCoordBetweenCoords(BlockVector bv, int outerX, int outerZ, int maxX, int maxZ) {
-        return isCoordBetweenCoords(bv.getBlockX(), bv.getBlockZ(), outerX, outerZ, maxX, maxZ);
+        return Base.isCoordBetweenCoords(bv.getBlockX(), bv.getBlockZ(), outerX, outerZ, maxX, maxZ);
     }
     
     public static boolean isCoordBetweenCoords(BlockVector bv, Block b1, Block b2) {
-        return isCoordBetweenCoords(bv.getBlockX(), bv.getBlockZ(), b1.getX(), b1.getZ(), b2.getX(), b2.getZ());
+        return Base.isCoordBetweenCoords(bv.getBlockX(), bv.getBlockZ(), b1.getX(), b1.getZ(), b2.getX(), b2.getZ());
     }
 }

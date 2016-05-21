@@ -1,3 +1,19 @@
+/*
+ * Copyright 2013 Dominic Masters and Jordan Atkins
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.domsplace.Villages.DataManagers;
 
 import static com.domsplace.Villages.Bases.Base.ChatDefault;
@@ -5,6 +21,7 @@ import static com.domsplace.Villages.Bases.Base.ChatError;
 import static com.domsplace.Villages.Bases.Base.getDataFolder;
 import com.domsplace.Villages.Bases.DataManager;
 import com.domsplace.Villages.Enums.ManagerType;
+import com.domsplace.Villages.Objects.DomsLocation;
 import com.domsplace.Villages.Objects.Plot;
 import com.domsplace.Villages.Objects.Region;
 import com.domsplace.Villages.Objects.Resident;
@@ -14,6 +31,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
@@ -42,7 +60,9 @@ public class LanguageManager extends DataManager {
         cDV("cantfindtax", "%e%Can't find a tax by that name.");
         cDV("cantfindvillage", "%e%Couldn't find Village.");
         cDV("cantkickmayor", "%e%You cannot kick the mayor of the Village.");
-        cDV("chunkavailable", "%d%This chunk is available!\nPrce: %i%%x%");
+        cDV("cantshrinknotpart", "%e%Can't unclaim this region, it's not part of the Village.");
+        cDV("cantshrinkspawn", "%e%Can't unclaim the Village spawn.");
+        cDV("chunkavailable", "%d%This chunk is available!\nPrice: %i%%x%");
         cDV("chunkclaimed", "%d%The %i%Mayor %d%has claimed %i%%r%%d% for you.");
         cDV("chunkclaimedbyplayer", "%e%This plot is claimed by another player.");
         cDV("chunknotowned", "%e%You don't own this plot.");
@@ -106,6 +126,7 @@ public class LanguageManager extends DataManager {
         cDV("onlymayor", "%e%Only the Mayor can do this.");
         cDV("onlymayorbank", "%e%Only the mayor can edit the village bank.");
         cDV("onlymayorexpand", "%e%Only the mayor can expand the Village.");
+        cDV("onlymayorshrink", "%e%Only the mayor can shrink the Village.");
         cDV("onlymayorexplode", "%e%Only the mayor can explode the Village.");
         cDV("onlymayorplot", "%e%Only the mayor can edit plots.");
         cDV("onlymayorsetmayor", "%e%Only the Mayor can elect the new Mayor.");
@@ -135,7 +156,7 @@ public class LanguageManager extends DataManager {
         cDV("notaxfound", "%e%Couldn't find the tax by that name.");
         cDV("topvillages", "%i%The top %x% Villages are:");
         cDV("topvillageslist", " &c= &6Top Villages &c= ");
-        cDV("villagebankneedmore", "%e%You don't have enough money in the Village bank! You need %n% to do this.");
+        cDV("villagebankneedmore", "%e%You don't have enough money in the Village bank! You need %x% to do this.");
         cDV("villageclosed", "%d%The Village %i%%v% %d%fell into Anarchy!");
         cDV("villagedelete", "%d%Deleted the village %i%%v%%d%!");
         cDV("villagedoesntexist", "%e%Village doesn't exist.");
@@ -146,10 +167,14 @@ public class LanguageManager extends DataManager {
         cDV("villagenamechaned", "New Village name is now %i%%v%%d%!");
         cDV("villagenameused", "%e%This Village name is already in use or is reserved.");
         cDV("villages", "%i%Villages: %d%%x%");
+        cDV("villageshrunk", "Unlcaimed %i%%x% Regions%d% from the Village.");
         cDV("welcomevillage", "");
         cDV("wildernessvillageneter", "Traveller %i%%p% %d%has entered the Village!");
         cDV("wildernesswildernessneter", "Traveller %i%%p% %d%left the Village and entered the Wilderness!");
-        cDV("withdrawledmoney", "%i%%p% %d%withdrew %i%%n% %d%from the Village Bank.");
+        cDV("withdrawledmoney", "%i%%p% %d%withdrew %i%%x% %d%from the Village Bank.");
+        cDV("showingborder", "%e%Now showing Village borders.");
+        cDV("hidingborder", "%e%No longer showing Village borders.");
+        cDV("warsdisabled", "%e%Village wars aren't enabled.");
         
         this.trySave();
     }
@@ -193,42 +218,55 @@ public class LanguageManager extends DataManager {
         if(newData instanceof Village) return appendKey(oldData, (Village) newData);
         if(newData instanceof Resident) return appendKey(oldData, (Resident) newData);
         if(newData instanceof Region) return appendKey(oldData, (Region) newData);
+        if(newData instanceof Region) return appendKey(oldData, (DomsLocation) newData);
         if(newData instanceof Plot) return appendKey(oldData, (Plot) newData);
         if(newData instanceof Tax) return appendKey(oldData, (Tax) newData);
         
-        return oldData.replaceAll("%x%", newData.toString());
+        return oldData.replaceAll("%x%", escape(newData));
     }
     
     private String appendKey(String oldData, Player p) {
-        return oldData.replaceAll("%p%", p.getDisplayName());
+        return oldData.replaceAll("%p%", escape(p.getDisplayName()));
     }
     
     private String appendKey(String oldData, OfflinePlayer p) {
         if(p.isOnline()) return appendKey(oldData, p.getPlayer());
-        return oldData.replaceAll("%p%", p.getName());
+        return oldData.replaceAll("%p%", escape(p.getName()));
     }
     
     private String appendKey(String oldData, Double amt) {
-        return oldData.replaceAll("%n%", Double.toString(amt));
+        return oldData.replaceAll("%n%", escape(Double.toString(amt)));
     }
     
     private String appendKey(String oldData, Village v) {
-        return oldData.replaceAll("%v%", v.getName());
+        return oldData.replaceAll("%v%", escape(v.getName()));
     }
     
     private String appendKey(String oldData, Resident r) {
-        return oldData.replaceAll("%p%", r.getName());
+        return oldData.replaceAll("%p%", escape(r.getName()));
     }
     
     private String appendKey(String oldData, Region r) {
-        return oldData.replaceAll("%r%", r.toString());
+        return oldData.replaceAll("%r%", escape(r.toString()));
     }
     
     private String appendKey(String oldData, Plot r) {
-        return oldData.replaceAll("%r%", r.getRegion().toString());
+        return oldData.replaceAll("%r%", escape(r.getRegion().toString()));
+    }
+    
+    private String appendKey(String oldData, DomsLocation r) {
+        return oldData.replaceAll("%r%", escape(r.toHumanString()));
     }
     
     private String appendKey(String oldData, Tax r) {
-        return oldData.replaceAll("%t%", r.getName());
+        return oldData.replaceAll("%t%", escape(r.getName()));
+    }
+    
+    private String escape(Object obj) {
+        return escape("" + obj);
+    }
+    
+    private String escape(String obj) {
+        return Matcher.quoteReplacement("" + obj);
     }
 }

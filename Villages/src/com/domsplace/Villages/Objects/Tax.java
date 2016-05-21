@@ -1,3 +1,19 @@
+/*
+ * Copyright 2013 Dominic Masters and Jordan Atkins
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.domsplace.Villages.Objects;
 
 import com.domsplace.Villages.Enums.TaxMultiplierType;
@@ -40,10 +56,10 @@ public class Tax {
     private double money;
     private TaxMultiplierType type;
     private double taxMultiplier;
-    private List<VillageItem> items;
+    private List<DomsItem> items;
     private String name;
     
-    public Tax(String name, String message, double hours, double money, TaxMultiplierType type, double taxMultiplier, List<VillageItem> items) {
+    public Tax(String name, String message, double hours, double money, TaxMultiplierType type, double taxMultiplier, List<DomsItem> items) {
         this.name = name;
         this.message = message;
         this.hours = hours;
@@ -60,7 +76,7 @@ public class Tax {
     public double getMoney() {return this.money;}
     public TaxMultiplierType getMultiplierType() {return this.type;}
     public double getTaxMultiplier() {return this.taxMultiplier;}
-    public List<VillageItem> getItems() {return this.items;}
+    public List<DomsItem> getItems() {return this.items;}
     public String getName() {return this.name;}
     
     private void register() {Tax.registerTax(this);}
@@ -85,8 +101,8 @@ public class Tax {
         return c;
     }
     
-    public List<VillageItem> getRelativeItemsCost(Village v) {
-        List<VillageItem> items = new ArrayList<VillageItem>();
+    public List<DomsItem> getRelativeItemsCost(Village v) {
+        List<DomsItem> items = new ArrayList<DomsItem>();
         
         int c = 1;
         

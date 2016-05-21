@@ -1,4 +1,20 @@
-    package com.domsplace.Villages.DataManagers;
+/*
+ * Copyright 2013 Dominic Masters and Jordan Atkins
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.domsplace.Villages.DataManagers;
 
 import com.domsplace.Villages.Bases.Base;
 import com.domsplace.Villages.Bases.DataManager;
@@ -6,7 +22,6 @@ import com.domsplace.Villages.Bases.PluginHook;
 import com.domsplace.Villages.Enums.ExpandMethod;
 import com.domsplace.Villages.Enums.ManagerType;
 import com.domsplace.Villages.Events.VillagesPluginReloadedEvent;
-import com.domsplace.Villages.GUI.VillagesGUIManager;
 import com.domsplace.Villages.Objects.VillageMapRenderer;
 import com.domsplace.Villages.Threads.VillageScoreboardThread;
 import java.awt.GraphicsEnvironment;
@@ -69,7 +84,7 @@ public class ConfigManager extends DataManager {
         df("colors.prefix.chat", true);
         df("colors.prefix.messages", "&9[&7Villages&9]");
         df("colors.prefix.village", "&9[&7%v%&9]");
-        df("colors.prefix.wilderness", "Wilderness");
+        df("colors.prefix.wilderness", "&9[&7Wilderness&9]");
         df("colors.players.friend", "&a");
         df("colors.players.foe", "&4");
         
@@ -86,7 +101,6 @@ public class ConfigManager extends DataManager {
         df("protection.grief.wilderness.mine", true);
         df("protection.grief.wilderness.tnt", false);
         
-        
         df("protection.pvp.village.samevillage", false);
         df("protection.pvp.village.differentvillage", true);
         df("protection.pvp.village.notinvillage", false);
@@ -97,16 +111,30 @@ public class ConfigManager extends DataManager {
         
         String mobspawningkey = "protection.mobspawning.village.";
         for(EntityType t : EntityType.values()) {
-            if(t == null || t.getName() == null) continue;
+            if(t == null || t.name() == null) continue;
             if(!t.isAlive()) continue;
-            df(mobspawningkey + t.getName(), true);
+            df(mobspawningkey + t.name(), true);
         }
         
         mobspawningkey = "protection.mobspawning.wilderness.";
         for(EntityType t : EntityType.values()) {
-            if(t == null || t.getName() == null) continue;
+            if(t == null || t.name() == null) continue;
             if(!t.isAlive()) continue;
-            df(mobspawningkey + t.getName(), true);
+            df(mobspawningkey + t.name(), true);
+        }
+        
+        String mobkillingkey = "protection.mobattacking.village.";
+        for(EntityType t : EntityType.values()) {
+            if(t == null || t.name() == null) continue;
+            if(!t.isAlive()) continue;
+            df(mobkillingkey + t.name(), true);
+        }
+        
+        mobkillingkey = "protection.mobattacking.wilderness.";
+        for(EntityType t : EntityType.values()) {
+            if(t == null || t.name() == null) continue;
+            if(!t.isAlive()) continue;
+            df(mobkillingkey + t.name(), false);
         }
         
         //PLANNED:
@@ -122,18 +150,19 @@ public class ConfigManager extends DataManager {
         df("plugins.herochat", true);
         df("plugins.vault", true);
         df("plugins.essentials.chat", true);
-        //df("plugins.dynmap", true); (REMOVED TEMPORARILY)
+        //df("plugins.dynmap", true);
         
         //Features
         df("features.lists.topvillages", true);
         df("features.lists.villagemembers", true);
         df("features.lists.taxday", true);
+        df("features.list.wilderness", true);
         df("features.cyclespeed", 60);
-        //df("features.map", true); (COMING SOON!)
         df("features.banks.item", true);
         df("features.banks.money", true);
         df("features.plots", true);
         //df("features.ranks", true); (COMING SOON!)
+        df("features.wars", true);
         df("features.updates", true);
         df("features.expand.method", "CHUNK");
         df("features.guiscreen", true);
@@ -148,6 +177,8 @@ public class ConfigManager extends DataManager {
         //Costs
         df("costs.createvillage", 1000);
         df("costs.expandvillage", 100);
+        df("refund.closevillage", 500);
+        df("refund.closevillageperchunk", 50);
         
         //Messages
         df("messages.names.wilderness", "Wilderness");
@@ -236,7 +267,7 @@ public class ConfigManager extends DataManager {
         Base.FriendColor = loadColor("colors.players.friend");
         Base.EnemyColor = loadColor("colors.players.foe");
         
-        Base.Wilderness = loadColor("messages.names.wilderness");
+        Base.WildernessName = loadColor("messages.names.wilderness");
         
         if(gs("features.expand.method", "CHUNK").equalsIgnoreCase("CLASSIC")){
             Base.ExpandingMethod = ExpandMethod.CLASSIC;
@@ -258,6 +289,7 @@ public class ConfigManager extends DataManager {
         PluginHook.HERO_CHAT_HOOK.shouldHook(config.getBoolean("plugins.herochat", true));
         PluginHook.TAG_API_HOOK.shouldHook(config.getBoolean("plugins.tagapi", true));
         PluginHook.ESSENTIALS_CHAT_HOOK.shouldHook(config.getBoolean("plugins.essentials.chat", true));
+        //PluginHook.DYNMAP_HOOK.shouldHook(config.getBoolean("plugins.dynmap", true));
         
         Base.useScoreboards = 
                 Base.getConfig().getBoolean("features.lists.topvillages", true) || 

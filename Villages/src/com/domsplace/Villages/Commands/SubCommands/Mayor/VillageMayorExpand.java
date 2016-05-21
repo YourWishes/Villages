@@ -1,3 +1,19 @@
+/*
+ * Copyright 2013 Dominic Masters and Jordan Atkins
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.domsplace.Villages.Commands.SubCommands.Mayor;
 
 import com.domsplace.Villages.Bases.Base;
@@ -17,7 +33,11 @@ import org.bukkit.command.CommandSender;
 
 public class VillageMayorExpand extends SubCommand {
     public VillageMayorExpand() {
-        super("village", "mayor", "expand");
+        this("mayor");
+    }
+    
+    public VillageMayorExpand(String alias) {
+        super("village", alias, "expand");
         this.setPermission("mayor.expand");
     }
     
@@ -51,12 +71,12 @@ public class VillageMayorExpand extends SubCommand {
             }
             
             //Get Chunks that border
-            int x = v.getSpawn().getRegionX();
-            int z = v.getSpawn().getRegionZ();
+            int x = v.getSpawnRegion().getRegionX();
+            int z = v.getSpawnRegion().getRegionZ();
         
             for(int cx = -size; cx <= size; cx++) {
                 for(int cz = -size; cz <= size; cz++) {
-                    Region re = v.getSpawn().getRelativeRegion(cx, cz);
+                    Region re = v.getSpawnRegion().getRelativeRegion(cx, cz);
                     if(r == null) {
                         continue;
                     }
@@ -91,10 +111,10 @@ public class VillageMayorExpand extends SubCommand {
         }
         
         //Charge Village on Per-Chunk basis
-        double cost = getCost("expandvillage") * claiming.size();
+        double cost = getCost("expandvillage") * (double)claiming.size();
         
         //First, make sure they have the money to expand
-        if(Base.useEconomy && getConfig().getBoolean("features.banks.money", true)  && !hasBalance(v, cost)) {
+        if(Base.useEconomy() && getConfig().getBoolean("features.banks.money", true)  && !hasBalance(v, cost)) {
             sk(sender, "villagebankneedmore", PluginHook.VAULT_HOOK.formatEconomy(cost));
             return true;
         }
@@ -105,8 +125,12 @@ public class VillageMayorExpand extends SubCommand {
         if(event.isCancelled()) return true;
         
         //Charge Village
-        if(Base.useEconomy && getConfig().getBoolean("features.banks.money", true)) {
-            v.getBank().addWealth(-cost);
+        if(Base.useEconomy()) {
+            if(getConfig().getBoolean("features.banks.money", true)) {
+                v.getBank().addWealth(-cost);
+            } else {
+                Base.chargePlayer(sender, cost);
+            }
         }
         
         v.addRegions(claiming);

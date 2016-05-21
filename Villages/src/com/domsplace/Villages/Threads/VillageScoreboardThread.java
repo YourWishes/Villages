@@ -1,3 +1,19 @@
+/*
+ * Copyright 2013 Dominic Masters and Jordan Atkins
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.domsplace.Villages.Threads;
 
 import com.domsplace.Villages.Bases.Base;
@@ -50,6 +66,9 @@ public class VillageScoreboardThread extends VillageThread {
             v.setPlayer();
             v.reset();
             
+            if(!getConfig().getBoolean("features.list.wilderness", true) 
+                    && Village.getPlayersVillage(Resident.getResident(p)) == null) continue;
+            
             if(current.equals("top")) {
                 v.setName(Base.colorise(Base.trim(Base.gk("topvillageslist").get(0), 32)));
                 
@@ -65,7 +84,7 @@ public class VillageScoreboardThread extends VillageThread {
                 
                 Village pvil = Village.getPlayersVillage(Resident.getResident(p));
                 if(pvil == null) {
-                    v.addScore(Base.Wilderness, 1);
+                    v.addScore(Base.WildernessName, 1);
                 } else {
                     int i = 1;
                     v.addScore(ChatImportant + pvil.getMayor().getName(), i);

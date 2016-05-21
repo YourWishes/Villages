@@ -1,3 +1,19 @@
+/*
+ * Copyright 2013 Dominic Masters and Jordan Atkins
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.domsplace.Villages.DataManagers;
 
 import com.domsplace.Villages.Bases.Base;
@@ -13,7 +29,8 @@ import com.domsplace.Villages.Objects.Resident;
 import com.domsplace.Villages.Objects.Tax;
 import com.domsplace.Villages.Objects.TaxData;
 import com.domsplace.Villages.Objects.Village;
-import com.domsplace.Villages.Objects.VillageItem;
+import com.domsplace.Villages.Objects.DomsItem;
+import com.domsplace.Villages.Objects.DomsLocation;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -57,7 +74,7 @@ public class VillageManager extends DataManager {
         }
     }
     
-    private void saveVillage(Village village) throws IOException {
+    public void saveVillage(Village village) throws IOException {
         if(!Base.useSQL) {
             saveVillageAsYML(village);
         } else {
@@ -65,7 +82,7 @@ public class VillageManager extends DataManager {
         }
     }
     
-    private void loadAllVillages() throws IOException {
+    public void loadAllVillages() throws IOException {
         Village.deRegisterVillages(Village.getVillages());
         if(!Base.useSQL) {
             loadAllVillagesYML();
@@ -74,7 +91,7 @@ public class VillageManager extends DataManager {
         }
     }
     
-    private void loadAllVillagesYML() throws IOException {
+    public void loadAllVillagesYML() throws IOException {
         this.directory = new File(getDataFolder(), "villages");
         if(!this.directory.exists()) this.directory.mkdir();
         File[] villages = this.directory.listFiles();
@@ -86,7 +103,7 @@ public class VillageManager extends DataManager {
         }
     }
     
-    private Village loadVillageYML(File file) {
+    public Village loadVillageYML(File file) {
         if(!file.getName().toLowerCase().endsWith(EXTENSION.toLowerCase())) return null;
         
         YamlConfiguration yml = YamlConfiguration.loadConfiguration(file);
@@ -121,9 +138,13 @@ public class VillageManager extends DataManager {
         }
         
         Region spawn = Region.getRegion(yml.getString("spawn"));
-        v.setSpawn(spawn);
+        if(spawn != null) {
+            v.setSpawn(new DomsLocation(spawn.getSafeMiddle()));
+        } else {
+            v.setSpawn(DomsLocation.guessLocation(yml.getString("spawn")));
+        }
         
-        if(spawn.getBukkitWorld() == null) {
+        if(!v.getSpawn().isWorldLoaded()) {
             log("Village \"" + v.getName() + "\" is in a non loaded world! Village map may contains errors!");
         }
         
@@ -135,9 +156,11 @@ public class VillageManager extends DataManager {
             for(String k : ((MemorySection) yml.get("bank.items")).getKeys(false)) {
                 String itemdata = yml.getString("bank.items." + k);
                 try {
-                    List<VillageItem> items = VillageItem.createItems(itemdata);
+                    List<DomsItem> items = DomsItem.createItems(itemdata);
                     v.getBank().addItems(items);
-                } catch(InvalidItemException e) {log("bank.items." + k + " is an invalid item.");}
+                } catch(InvalidItemException e) {
+                    log("bank.items." + k + " is an invalid item.");
+                }
             }
         }
         
@@ -166,6 +189,20 @@ public class VillageManager extends DataManager {
             }
         }
         
+        if(yml.contains("friends")) {
+            List<String> friends = yml.getStringList("friends");
+            for(String s : friends) {
+                v.addFriend(s);
+            }
+        }
+        
+        if(yml.contains("foes")) {
+            List<String> foes = yml.getStringList("foes");
+            for(String s : foes) {
+                v.addFoe(s);
+            }
+        }
+        
         return v;
     }
     
@@ -191,7 +228,7 @@ public class VillageManager extends DataManager {
         
         String query = "SELECT `PlotID` FROM `%db%`.`%t%Spawns` WHERE `VillageID`='" + villageID + "';";
         List<Map<String, String>> result = DataManager.SQL_MANAGER.fetch(query);
-        v.setSpawn(this.getRegionFromID(getInt(result.get(0).get("PlotID"))));
+        v.setSpawn(new DomsLocation(this.getRegionFromID(getInt(result.get(0).get("PlotID"))).getSafeMiddle()));
         
         for(Object region : this.getRegionsFromVillage(v, villageID)) {
             if(region instanceof Region) {
@@ -219,15 +256,33 @@ public class VillageManager extends DataManager {
         for(Map<String, String> res : result) {
             int itemID = getInt(res.get("ItemID"));
             try {
-                VillageItem item = this.getItemFromID(itemID);
+                DomsItem item = this.getItemFromID(itemID);
                 v.getBank().addItem(item);
             } catch(Exception e){}
+        }
+        
+        query = "SELECT `%t%Villages`.`VillageName`,`%t%Relations`.`isFriend` FROM `%db%`.`%t%Villages`,`%db%`.`%t%Relations` WHERE `%db%`.`%t%Relations`.`VillageID`='" + villageID + "' AND `%db%`.`%t%Relations`.`TargetVillageID` = `%db%`.`%t%Villages`.`VillageID`;";
+        result = DataManager.SQL_MANAGER.fetch(query);
+        for(Map<String, String> res : result) {
+            try {
+                String village = res.get("VillageName").toString();
+                boolean isFriend = res.get("isFriend").toString().equalsIgnoreCase("1");
+                if(isFriend) {
+                    sendMessage("friend");
+                    v.addFriend(village);
+                } else {
+                    sendMessage("foe");
+                    v.addFoe(village);
+                }
+            } catch(Exception e){
+                error("Failed loading Village Wars", e);
+            }
         }
         
         Village.registerVillage(v);
     }
     
-    private void saveVillageAsYML(Village village) throws IOException {
+    public void saveVillageAsYML(Village village) throws IOException {
         //Delete the old Village
         File villageFile = new File(this.directory, village.getName() + EXTENSION);
         if(villageFile.exists()) villageFile.delete();
@@ -242,6 +297,8 @@ public class VillageManager extends DataManager {
         yml.set("createdDate", village.getCreatedDate());
         yml.set("spawn", village.getSpawn().toString());
         yml.set("regions", village.getRegionsAsString());
+        yml.set("friends", village.getFriends());
+        yml.set("foes", village.getFoes());
         
         if(village.getBank().getWealth() > 0d) {
             yml.set("bank.wealth", village.getBank().getWealth());
@@ -272,10 +329,10 @@ public class VillageManager extends DataManager {
         }
         
         Bank b = village.getBank();
-        List<VillageItem> currentBankItems = b.getItemsFromInventory();
+        List<DomsItem> currentBankItems = b.getItemsFromInventory();
         
         int viid = 0;
-        for(VillageItem vi : currentBankItems) {
+        for(DomsItem vi : currentBankItems) {
             String n = "item" + viid;
             
             yml.set("bank.items." + n, vi.toString());
@@ -286,10 +343,10 @@ public class VillageManager extends DataManager {
         yml.save(villageFile);
     }
     
-    private void saveSQLResidents() throws IOException {
+    public void saveSQLResidents() throws IOException {
         //Make sure to update books that are registered
         for(Village v : Village.getVillages()) {
-            for(VillageItem item : v.getBank().getItemsFromInventory()) {
+            for(DomsItem item : v.getBank().getItemsFromInventory()) {
                 if(item.getBookAuthor() == null) continue;
                 Resident r = Resident.getResident(item.getBookAuthor());
             }
@@ -301,7 +358,8 @@ public class VillageManager extends DataManager {
         String query = "INSERT IGNORE INTO `%db%`.`%t%Players` (`PlayerName`) VALUES ";
         
         for(Resident r : residents) {
-            query += "('" + r.getName() + "'), ";
+            //Sheeeeeeet forgot to escape
+            query += "('" + DataManager.SQL_MANAGER.sqlEscape(r.getName()) + "'), ";
         }
         
         query = query.substring(0, query.length() - 2);
@@ -310,7 +368,7 @@ public class VillageManager extends DataManager {
         DataManager.SQL_MANAGER.query(query);
     }
     
-    private void saveVillageAsSQL(Village village) throws IOException {
+    public void saveVillageAsSQL(Village village) throws IOException {
         //Save Village
         String query = "INSERT IGNORE INTO `%db%`.`%t%Villages` ("
                 + "`VillageName`, `VillageDescription`, `VillageCreateDate`, "
@@ -358,9 +416,14 @@ public class VillageManager extends DataManager {
             
             query = "DELETE FROM `%db%`.`%t%Items` WHERE `ItemID`='" + id + "';";
             DataManager.SQL_MANAGER.query(query);
-        }
+        }   
+        query = "DELETE FROM `%db%`.`%t%Residents` WHERE `VillageID` = '" + villageID + "';";
+        DataManager.SQL_MANAGER.query(query);
         
-        query = "DELETE FROM `%db%`.`%t%BankItems` WHERE `VillageID`='" + villageID + "';";
+        query = "DELETE FROM `%db%`.`%t%Relations` WHERE `VillageID` = '" + villageID + "';";
+        DataManager.SQL_MANAGER.query(query);
+        
+        query = "DELETE FROM `%db%`.`%t%BankItems` WHERE `VillageID` = '" + villageID + "';";
         DataManager.SQL_MANAGER.query(query);
         
         //Clear Old Residents
@@ -426,15 +489,11 @@ public class VillageManager extends DataManager {
         }
         
         //Store Bank
-        for(VillageItem item : village.getBank().getItemsFromInventory()) {
+        for(DomsItem item : village.getBank().getItemsFromInventory()) {
             query = "INSERT INTO `%db%`.`%t%Items` (`ID`";
-            if(item.getData() >= 0) {
-                query += ", `Data`";
-            }
+            query += ", `Data`";
             query += ") VALUES ('" + item.getMaterialName()+ "'";
-            if(item.getData() >= 0) {
-                query += ", '" + item.getData() + "'";
-            }
+            query += ", '" + item.getData() + "'";
             
             query += ");";
             
@@ -442,9 +501,9 @@ public class VillageManager extends DataManager {
             
             //Add Enchantments (if any)
             if(item.getEnchantments() != null && item.getEnchantments().size() > 0) {
-                query = "INSERT INTO `%db%`.`%t%ItemEnchantments` (`ItemID`, `EnchantmentID`, `EnchantmentLevel`) VALUES";
+                query = "INSERT INTO `%db%`.`%t%ItemEnchantments` (`ItemID`, `EnchantmentName`, `EnchantmentLevel`) VALUES";
                 for(Enchantment e : item.getEnchantments().keySet()) {
-                    query += "('" + id + "', '" + e.getId() + "', '" + item.getEnchantments().get(e) + "'), ";
+                    query += "('" + id + "', '" + e.getName() + "', '" + item.getEnchantments().get(e) + "'), ";
                 }
                 
                 query = query.substring(0, query.length() - 2) + ";";
@@ -496,8 +555,21 @@ public class VillageManager extends DataManager {
             DataManager.SQL_MANAGER.query(query);
         }
         
+        //Save Friends/Foes
+        query = "INSERT INTO `%db%`.`%t%Relations` (`VillageID`, `TargetVillageID`, `isFriend`) VALUES ";
+        for(String s : village.getFriends()) {
+            try {query += "('" + villageID + "', '" + this.getVillageID(s) + "', '1'),";} catch(Exception e) {}
+        }
+        for(String s : village.getFoes()) {
+            try {query += "('" + villageID + "', '" + this.getVillageID(s) + "', '0'),";} catch(Exception e) {}
+        }
+        if(village.getFriends().size() + village.getFoes().size() > 0) {
+            query = query.substring(0, query.length() - 1) + ";";
+            try {DataManager.SQL_MANAGER.query(query);} catch(Exception e) {}
+        }
+        
         //Last Step, Set the spawn
-        query = "REPLACE INTO `%db%`.`%t%Spawns` (`VillageID`, `PlotID`) VALUES ('" + villageID + "', '" + this.getPlotID(village.getSpawn()) + "');";
+        query = "REPLACE INTO `%db%`.`%t%Spawns` (`VillageID`, `PlotID`) VALUES ('" + villageID + "', '" + this.getPlotID(village.getSpawnRegion()) + "');";
         DataManager.SQL_MANAGER.query(query);
     }
     
@@ -556,6 +628,12 @@ public class VillageManager extends DataManager {
             DataManager.SQL_MANAGER.query(query);
             
             query = "DELETE FROM `%db%`.`%t%Plots` WHERE `VillageID` = '" + villageID + "';";
+            DataManager.SQL_MANAGER.query(query);
+            
+            query = "DELETE FROM `%db%`.`%t%Relations` WHERE `VillageID` = '" + villageID + "';";
+            DataManager.SQL_MANAGER.query(query);
+            
+            query = "DELETE FROM `%db%`.`%t%Relations` WHERE `TargetVillageID` = '" + villageID + "';";
             DataManager.SQL_MANAGER.query(query);
             
             query = "DELETE FROM `%db%`.`%t%Villages` WHERE `VillageID` = '" + villageID + "';";
@@ -649,11 +727,11 @@ public class VillageManager extends DataManager {
         return regions;
     }
     
-    public VillageItem getItemFromID(int id) {
+    public DomsItem getItemFromID(int id) {
         String query = "SELECT `ID`, `Data` FROM `%db%`.`%t%Items` WHERE `ItemID`='" + id + "' LIMIT 1;";
         Map<String, String> result = DataManager.SQL_MANAGER.fetch(query).get(0);
         
-        VillageItem item = new VillageItem(result.get("ID"), getShort(result.get("Data")));
+        DomsItem item = new DomsItem(result.get("ID"), getShort(result.get("Data")));
         
         //Get Additional data
         query = "SELECT `ItemName` FROM `%db%`.`%t%ItemNames` WHERE `ItemID`='" + id + "';";
@@ -681,9 +759,16 @@ public class VillageManager extends DataManager {
         List<Map<String, String>> enchants = DataManager.SQL_MANAGER.fetch(query);
         for(Map<String, String> enchant : enchants) {
             try {
-                int eid = getInt(enchant.get("EnchantmentID"));
+                String eid = enchant.get("EnchantmentName");
                 int lvl = getInt(enchant.get("EnchantmentLevel"));
-                item.addEnchantment(Enchantment.getById(eid), lvl);
+                
+                Enchantment en = Enchantment.getByName(eid);
+                
+                if(isInt(eid)) {
+                    en = Enchantment.getById(getInt(eid));
+                }
+                
+                item.addEnchantment(en, lvl);
             } catch(Exception e) {}
         }
         

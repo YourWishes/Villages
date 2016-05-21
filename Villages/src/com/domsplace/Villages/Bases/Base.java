@@ -1,11 +1,31 @@
+/*
+ * Copyright 2013 Dominic Masters and Jordan Atkins
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.domsplace.Villages.Bases;
 
 import com.domsplace.BansUtils;
+import com.domsplace.Villages.Hooks.VaultHook;
+import com.domsplace.DomsCommands.Objects.DomsPlayer;
+import com.domsplace.Villages.DataManagers.CraftBukkitManager;
 import com.domsplace.Villages.Enums.ExpandMethod;
 import com.domsplace.Villages.GUI.VillagesGUIManager;
 import com.domsplace.Villages.Objects.Resident;
 import com.domsplace.Villages.Objects.Village;
 import com.domsplace.Villages.VillagesPlugin;
+import com.dthielke.herochat.Herochat;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Date;
@@ -24,6 +44,8 @@ import org.bukkit.entity.Player;
 
 public class Base extends RawBase {
     public static final String TAB = "    ";
+    public static final String OVERRIDE_PERMISSION = "Villages.admin.override";
+    public static final String BUKKIT_PAGE = "http://dev.bukkit.org/bukkit-plugins/villages/";
     
     public static String GUIScreen;
     
@@ -38,7 +60,7 @@ public class Base extends RawBase {
     public static String VillagePrefix = "&9[&7%v%&9]";
     public static String WildernessPrefix = "&9[&7Wilderness&9]";
     
-    public static String Wilderness = "Wilderness";
+    public static String WildernessName = "Wilderness";
     
     public static String FriendColor = "&a";
     public static String EnemyColor = "&4";
@@ -56,9 +78,8 @@ public class Base extends RawBase {
     public static boolean useSQL = false;
     public static boolean useWorldGuard = false;
     public static boolean useTagAPI = false;
-    public static boolean useEconomy = false;
     public static boolean useScoreboards = false;
-
+    
     //String Utils
     public static String getPrefix() {
         if(!ChatPrefix.contains("§")) ChatPrefix = colorise(ChatPrefix);
@@ -68,11 +89,11 @@ public class Base extends RawBase {
     }
     
     public static String getVillagePrefix(Village v) {
-        String p = VillagePrefix;
+        String p;
         if(v != null) {
             p = VillagePrefix.replaceAll("%v%", v.getName());
         } else {
-            p = VillagePrefix.replaceAll("%v%", "Wilderness");
+            p = VillagePrefix.replaceAll("%v%", WildernessName);
         }
         
         if(!p.contains("§")) p = colorise(p);
@@ -155,13 +176,56 @@ public class Base extends RawBase {
         return w;
     }
     
+    public static String arrayToString(Object[] array) {
+        return Base.arrayToString(array, " ");
+    }
+    
+    public static String arrayToString(Object[] array, String seperator) {
+        String m = "";
+        for(int i = 0; i < array.length; i++) {
+            m += array[i].toString();
+            if(i < (array.length - 1)) {
+                m += seperator;
+            }
+        }
+        
+        return m;
+    }
+    
     public static String trim(String s, int length) {
         if(s.length() < length) return s;
         return s.substring(0, length);
     }
     
     //Messaging Utils
+    public static boolean sendRawMessage(Player player, String message) {
+        if(!CraftBukkitManager.CRAFT_BUKKIT_MANAGER.canFindCraftBukkit()) return false;
+        Class IChatBaseComponent = CraftBukkitManager.CRAFT_BUKKIT_MANAGER.getMineClass("IChatBaseComponent");
+        Class ChatSerializer = CraftBukkitManager.CRAFT_BUKKIT_MANAGER.getMineClass("ChatSerializer");
+        Class PacketPlayOutChat = CraftBukkitManager.CRAFT_BUKKIT_MANAGER.getMineClass("PacketPlayOutChat");
+        Class CraftPlayer = CraftBukkitManager.CRAFT_BUKKIT_MANAGER.getCraftClass("entity.CraftPlayer");
+        Class Packet = CraftBukkitManager.CRAFT_BUKKIT_MANAGER.getMineClass("Packet");
+        Class PlayerConnection = CraftBukkitManager.CRAFT_BUKKIT_MANAGER.getMineClass("PlayerConnection");
+        if(IChatBaseComponent == null || ChatSerializer == null || PacketPlayOutChat == null || CraftPlayer == null) return false;
+        
+        try {
+            Object comp = ChatSerializer.getDeclaredMethod("a", String.class).invoke(null, message);
+            Object packet = PacketPlayOutChat.getDeclaredConstructor(IChatBaseComponent, boolean.class).newInstance(comp, true);
+            Object cPlayer = CraftPlayer.cast(player);
+            Object handle = CraftPlayer.getMethod("getHandle").invoke(cPlayer);
+            Object playerConnection = handle.getClass().getDeclaredField("playerConnection").get(handle);
+            PlayerConnection.getDeclaredMethod("sendPacket", Packet).invoke(playerConnection, packet);
+            return true;
+        } catch(Exception e) {
+            return false;
+        }
+    }
+    
     public static void sendMessage(CommandSender sender, String msg) {
+        sendMessage(sender, msg, true);
+    }
+    
+    public static void sendMessage(CommandSender sender, String msg, boolean loopback) {
         if(msg.replaceAll(" ", "").equalsIgnoreCase("")) return;
         if(!inVillageWorld(sender)) return;
         msg = msg.replaceAll("\\t", TAB);
@@ -303,6 +367,30 @@ public class Base extends RawBase {
         return (Player) o;
     }
     
+    public static Player getPlayer(CommandSender sender, String argument) {
+        for(Player plyr : Bukkit.getOnlinePlayers()) {
+            if(!canSee(sender, plyr)) continue;
+            if(plyr.getName().toLowerCase().startsWith(argument.toLowerCase())) {
+                return plyr;
+            }
+        }
+        
+        for(Player plyr : Bukkit.getOnlinePlayers()) {
+            if(!canSee(sender, plyr)) continue;
+            if(plyr.getName().toLowerCase().contains(argument.toLowerCase())) {
+                return plyr;
+            }
+        }
+        
+        for(Player plyr : Bukkit.getOnlinePlayers()) {
+            if(!canSee(sender, plyr)) continue;
+            if(plyr.getDisplayName().toLowerCase().contains(argument.toLowerCase())) {
+                return plyr;
+            }
+        }
+        return null;
+    }
+    
     public static OfflinePlayer getOfflinePlayer(Player player) {
         return Bukkit.getOfflinePlayer(player.getName());
     }
@@ -361,6 +449,19 @@ public class Base extends RawBase {
     
     public static byte getByte(Object o) {
         return Byte.parseByte(o.toString());
+    }
+    
+    public static boolean isFloat(Object o) {
+        try {
+            Long.parseLong(o.toString());
+            return true;
+        } catch(Exception e) {
+            return false;
+        }
+    }
+
+    public static float getFloat(Object o) {
+        return Float.parseFloat(o.toString());
     }
     
     public static String listToString(List<String> strings) {
@@ -435,33 +536,71 @@ public class Base extends RawBase {
     }
     
     //Player Utils
-    public static boolean hasPermission(CommandSender sender, String permission) {
-        debug("Checking if " + sender.getName() + " has " + permission);
+    public static boolean hasPermission(Entity e, String perm) {
+        if(!isPlayer(e)) return true;
+        return hasPermission(getPlayer(e), perm);
+    }
+    
+    public static boolean hasPermission(OfflinePlayer sender, String permission) {
         if(permission.equals("Villages.none")) return true;
+        if(sender.isOp()) return true;
+        if(sender.isOnline()) return hasPermission(sender.getPlayer(), permission);
+        
+        //PermissionsEx Permission Checking
+        if(PluginHook.PEX_HOOK.isHooked()) {
+            return PluginHook.PEX_HOOK.hasPermission(sender.getName(), permission);
+        }
+        
+        World world = Bukkit.getWorlds().get(0);
+        if(sender.isOnline()) {
+            world = sender.getPlayer().getWorld();
+        }
+        
+        //Vault Permission Checking
+        if(PluginHook.VAULT_HOOK.isHooked() && PluginHook.VAULT_HOOK.getPermission() != null) {
+            return PluginHook.VAULT_HOOK.getPermission().playerHas(world, sender.getName(), permission);
+        }
+        
+        if(!sender.isOnline()) return false;
+        
+        return hasPermission(sender.getPlayer(), permission);
+    }
+    
+    public static boolean hasPermission(Player sender, String permission) {return hasPermission((CommandSender) sender, permission);}
+    
+    public static boolean hasPermission(CommandSender sender, String permission) {
+        if(permission.equals(getPlugin().getName() + ".none")) return true;
         if(!isPlayer(sender)) return true;
+        if(getPlayer(sender).isOp()) return true;
+        if(getPlayer(sender).hasPermission(permission)) return true;
         
         //PermissionsEx Permission Checking
         if(PluginHook.PEX_HOOK.isHooked()) {
             return PluginHook.PEX_HOOK.hasPermission(getPlayer(sender), permission);
         }
         
+        //Vault Permission Checking
+        if(PluginHook.VAULT_HOOK.isHooked() && PluginHook.VAULT_HOOK.getPermission() != null) {
+            return PluginHook.VAULT_HOOK.getPermission().has(sender, permission);
+        }
+        
         return getPlayer(sender).hasPermission(permission);
     }
     
-    public boolean canSee(CommandSender p, OfflinePlayer target) {
+    public static boolean canSee(CommandSender p, OfflinePlayer target) {
         if(!isPlayer(p)) return true;
         if(!target.isOnline()) return true;
         return getPlayer(p).canSee(target.getPlayer());
     }
     
-    public boolean isVisible(OfflinePlayer t) {
+    public static boolean isVisible(OfflinePlayer t) {
         for(Player p : Bukkit.getOnlinePlayers()) {
             if(!canSee(p, t)) return false;
         }
         return true;
     }
     
-    public List<OfflinePlayer> getPlayersList() {
+    public static List<OfflinePlayer> getPlayersList() {
         List<OfflinePlayer> rv = new ArrayList<OfflinePlayer>();
         for(Player p : Bukkit.getOnlinePlayers()) {
             if(!isVisible(p)) continue;
@@ -470,9 +609,20 @@ public class Base extends RawBase {
         return rv;
     }
     
+    public static List<Player> getOnlinePlayers(CommandSender rel) {
+        List<Player> players = new ArrayList<Player>();
+        for(Player p : Bukkit.getOnlinePlayers()) {
+            if(!canSee(rel, p)) continue;
+            players.add(p);
+        }
+        return players;
+    }
+    
     public static boolean isMuted(OfflinePlayer player) {
-        if(!PluginHook.SEL_BANS_HOOK.isHooked()) return false;
-        return !BansUtils.CanPlayerTalk(player);
+        try {if(PluginHook.SEL_BANS_HOOK.isHooked() && !BansUtils.CanPlayerTalk((OfflinePlayer)player)) return true;}catch(Error e) {} catch(Exception e) {}
+        try {if(PluginHook.DOMS_COMMANDS_HOOK.isHooked() && DomsPlayer.getPlayer(player).isMuted()) return true;}catch(Error e) {}catch(Exception e){}
+        try {if(PluginHook.HERO_CHAT_HOOK.isHooked() && Herochat.getChatterManager().getChatter(player.getName()).isMuted()) return true;}catch(Error e) {} catch(Exception e) {}
+        return false;
     }
     
     //Language Utils
@@ -494,24 +644,24 @@ public class Base extends RawBase {
     
     //Economy Utils
     public static boolean hasBalance(String player, double amt) {
-        if(!useEconomy || PluginHook.VAULT_HOOK.getEconomy() == null) return true;
+        if(!useEconomy() || PluginHook.VAULT_HOOK.getEconomy() == null) return true;
         if(getBalance(player) >= amt) return true;
         return false;
     }
     
     public static boolean hasBalance(Village village, double amt) {
-        if(!useEconomy || PluginHook.VAULT_HOOK.getEconomy() == null) return true;
+        if(!useEconomy() || PluginHook.VAULT_HOOK.getEconomy() == null) return true;
         if(getBalance(village) >= amt) return true;
         return false;
     }
     
     public static double getBalance(String player) {
-        if(!useEconomy || PluginHook.VAULT_HOOK.getEconomy() == null) return -1.0d;
+        if(!useEconomy() || PluginHook.VAULT_HOOK.getEconomy() == null) return -1.0d;
         return PluginHook.VAULT_HOOK.getEconomy().getBalance(player);
     }
     
     public static double getBalance(Village village) {
-        if(!useEconomy || PluginHook.VAULT_HOOK.getEconomy() == null) return -1.0d;
+        if(!useEconomy() || PluginHook.VAULT_HOOK.getEconomy() == null) return -1.0d;
         return village.getBank().getWealth();
     }
     
@@ -522,6 +672,39 @@ public class Base extends RawBase {
     public static String getMoney(double money) {
         return PluginHook.VAULT_HOOK.formatEconomy(money);
     }
+    
+    public static boolean useEconomy() {
+        return PluginHook.VAULT_HOOK.isHooked() && PluginHook.VAULT_HOOK.getEconomy() != null;
+    }
+    
+    public static void chargePlayer(OfflinePlayer player, double amt) {
+        if(player == null) return;
+        chargePlayer(player.getName(), amt);
+    }
+    
+    public static void chargePlayer(Resident player, double amt) {
+        if(player == null) return;
+        chargePlayer(player.getName(), amt);
+    }
+    
+    public static void chargePlayer(CommandSender player, double amt) {
+        if(player == null) return;
+        if(!isPlayer(player)) return;
+        chargePlayer(player.getName(), amt);
+    }
+    
+    public static void chargePlayer(String player, double amt) {
+        if(player == null) return;
+        try {
+            if(amt == 0) return;
+            if(amt < 0) {
+                VaultHook.VAULT_HOOK.getEconomy().depositPlayer(player, -amt);
+            } else if(amt > 0) {
+                VaultHook.VAULT_HOOK.getEconomy().withdrawPlayer(player, amt);
+            }
+        } catch(Exception e) {} catch(Error e) {}
+    }
+
     
     //Time Utils
     public static long getNow() {

@@ -1,3 +1,19 @@
+/*
+ * Copyright 2013 Dominic Masters and Jordan Atkins
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.domsplace.Villages.Threads;
 
 import com.domsplace.Villages.Bases.Base;
@@ -15,7 +31,7 @@ import org.json.simple.JSONValue;
 public class UpdateThread extends VillageThread {
     public static String CheckUpdateURL = "https://api.curseforge.com/servermods/files?projectIds=59326";
     public static String LatestVersionURL = "http://dev.bukkit.org/bukkit-plugins/villages/";
-    public static String APIKey = "5e93f30f51b0fa39fe96360179fd759f09172279";
+    //public static String APIKey = "";
     
     public UpdateThread() {
         super(10, 3600, true);
@@ -30,7 +46,8 @@ public class UpdateThread extends VillageThread {
             URL url = new URL(CheckUpdateURL);
             
             URLConnection urlCon = url.openConnection();
-            urlCon.addRequestProperty("X-API-Key", APIKey);
+            //TODO: Add User API Key
+            //urlCon.addRequestProperty("X-API-Key", APIKey);
             
             urlCon.addRequestProperty("User-Agent", getPlugin().getName() + "/v"
                     + PluginManager.PLUGIN_MANAGER.getVersion() + " (by " + 
@@ -52,16 +69,16 @@ public class UpdateThread extends VillageThread {
             double onlineVersion = getDouble(name);
             double thisVersion = getDouble(PluginManager.PLUGIN_MANAGER.getVersion());
             
-            Base.debug("This Version: " + thisVersion);
-            Base.debug("Online Version: " + onlineVersion);
+            Base.debug("This version: " + thisVersion);
+            Base.debug("Online version: " + onlineVersion);
             
             if(thisVersion >= onlineVersion) {
-                Base.debug("No Updates Required!");
+                Base.debug("No updates required!");
                 return;
             }
             
             broadcast("Villages.admin", new String[]{
-                ChatImportant + "The new Version of " + getPlugin().getName() + " is available to download!",
+                ChatImportant + "The new version of " + getPlugin().getName() + " is available for download!",
                 "Download " + getPlugin().getName() + " v" + onlineVersion + " from: " + LatestVersionURL
             });
             this.stopThread();

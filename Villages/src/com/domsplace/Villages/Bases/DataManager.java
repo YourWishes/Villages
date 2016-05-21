@@ -1,3 +1,19 @@
+/*
+ * Copyright 2013 Dominic Masters and Jordan Atkins
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.domsplace.Villages.Bases;
 
 import com.domsplace.Villages.DataManagers.*;
@@ -16,6 +32,8 @@ public class DataManager extends Base {
     public static final GUIManager GUI_MANAGER = new GUIManager();
     public static final UpkeepManager UPKEEP_MANAGER = new UpkeepManager();
     public static final VillageManager VILLAGE_MANAGER = new VillageManager();
+    public static final HelpManager HELP_MANAGER = new HelpManager();
+    public static final CraftBukkitManager CRAFT_BUKKIT_MANAGER = new CraftBukkitManager();
     
     private static void registerManager(DataManager manager) {
         DataManager.MANAGERS.add(manager);
@@ -37,6 +55,7 @@ public class DataManager extends Base {
     public static boolean saveAll() {
         for(DataManager dm : MANAGERS) {
             if(dm.getType().equals(ManagerType.CONFIG)) continue;
+            if(dm.getType().equals(ManagerType.LANGUAGE)) continue;
             if(dm.save()) continue;
             return false;
         }

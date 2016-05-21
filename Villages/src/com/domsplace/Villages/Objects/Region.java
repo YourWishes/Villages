@@ -1,3 +1,19 @@
+/*
+ * Copyright 2013 Dominic Masters and Jordan Atkins
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.domsplace.Villages.Objects;
 
 import com.domsplace.Villages.Bases.Base;
@@ -12,6 +28,10 @@ import org.bukkit.entity.Player;
 public class Region extends Base {
     public static Region getRegion(Player player) {
         return getRegion(player.getLocation());
+    }
+    
+    public static Region getRegion(DomsLocation player) {
+        return getRegion(player.toLocation());
     }
     
     public static Region getRegion(Location location) {
@@ -37,8 +57,8 @@ public class Region extends Base {
     }
     
     public static Region getRegion(int x, int z, String world) {
-        x = (int)Math.floor(x / RawBase.regionSize)* RawBase.regionSize;
-        z = (int)Math.floor(z / RawBase.regionSize) * RawBase.regionSize;
+        x = (int)(Math.floor((double)x / (double)RawBase.regionSize) * (double)RawBase.regionSize);
+        z = (int)(Math.floor((double)z / (double)RawBase.regionSize)  * (double)RawBase.regionSize);
         return new Region(x, z, world);
     }
     
@@ -61,8 +81,12 @@ public class Region extends Base {
     public int getRegionX() {return (this.x / RawBase.regionSize);}
     public int getRegionZ() {return (this.z / RawBase.regionSize);}
     public String getWorld() {return this.world;}
+    //public int getMinX() {return this.x - RawBase.regionSize;}
+    //public int getMinZ() {return this.z - RawBase.regionSize;}
     public int getMaxX() {return this.x + RawBase.regionSize - 1;}
     public int getMaxZ() {return this.z + RawBase.regionSize - 1;}
+    
+    public boolean isWorldLoaded() {return this.getBukkitWorld() != null;}
     
     public boolean compare(Region region) {
         return
@@ -111,8 +135,8 @@ public class Region extends Base {
 
     public Location getSafeMiddle() {
         int y = 256;
-        int x = this.getX() + (this.getMaxX() - this.getX()) / 2;
-        int z = this.getZ() + (this.getMaxZ() - this.getZ()) / 2;
+        int x = this.getX() + (Base.regionSize / 2) - 1;
+        int z = this.getZ() + (Base.regionSize / 2) - 1;
         
         Block b = this.getBukkitWorld().getBlockAt(x, y, z);
         Block below;

@@ -1,3 +1,19 @@
+/*
+ * Copyright 2013 Dominic Masters and Jordan Atkins
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.domsplace.Villages.Listeners;
 
 import com.domsplace.Villages.Events.GriefEvent;
@@ -16,6 +32,7 @@ public class VillageGriefListener extends VillageListener {
     public void blockVillageInteracting(GriefEvent e) {
         if(!e.getType().equals(GriefType.INTERACT)) return;
         if(getConfig().getBoolean("protection.grief.village.use", true)) return;
+        if(Base.hasPermission(e.getPlayer(), Base.OVERRIDE_PERMISSION)) return;
         Resident resident = Resident.getResident(e.getPlayer());
         Village residentsVillage = Village.getPlayersVillage(resident);
         Region region = Region.getRegion(e.getBlock().getLocation());
@@ -30,6 +47,7 @@ public class VillageGriefListener extends VillageListener {
     public void blockVillageBreaking(GriefEvent e) {
         if(!e.getType().equals(GriefType.BREAK)) return;
         if(getConfig().getBoolean("protection.grief.village.break", true)) return;
+        if(Base.hasPermission(e.getPlayer(), Base.OVERRIDE_PERMISSION)) return;
         Resident resident = Resident.getResident(e.getPlayer());
         Village residentsVillage = Village.getPlayersVillage(resident);
         Region region = Region.getRegion(e.getBlock().getLocation());
@@ -44,6 +62,7 @@ public class VillageGriefListener extends VillageListener {
     public void blockVillagePlacing(GriefEvent e) {
         if(!e.getType().equals(GriefType.PLACE)) return;
         if(getConfig().getBoolean("protection.grief.village.place", true)) return;
+        if(Base.hasPermission(e.getPlayer(), Base.OVERRIDE_PERMISSION)) return;
         Resident resident = Resident.getResident(e.getPlayer());
         Village residentsVillage = Village.getPlayersVillage(resident);
         Region region = Region.getRegion(e.getBlock().getLocation());
@@ -58,6 +77,7 @@ public class VillageGriefListener extends VillageListener {
     public void blockVillageMining(GriefEvent e) {
         if(!e.getType().equals(GriefType.BLOCK_DAMAGE)) return;
         if(getConfig().getBoolean("protection.grief.village.mine", true)) return;
+        if(Base.hasPermission(e.getPlayer(), Base.OVERRIDE_PERMISSION)) return;
         Resident resident = Resident.getResident(e.getPlayer());
         Village residentsVillage = Village.getPlayersVillage(resident);
         Region region = Region.getRegion(e.getBlock().getLocation());
